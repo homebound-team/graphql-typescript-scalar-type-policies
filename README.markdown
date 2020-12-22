@@ -38,3 +38,29 @@ export const scalarTypePolicies = {
 ```
 
 Where the `dateTypePolicy` `const` should implement the Apollo Client `FieldPolicy`.
+
+Which you can then pass to Apollo's `InMemoryCache`:
+
+```typescript
+new InMemoryCache({ typePolicies: scalarTypePolicies })
+```
+
+And you can implement a field policy like:
+
+```typescript
+export const dateTypePolicy: FieldPolicy<Date, string> = {
+  merge: (_, incoming) => {
+    if (isNullOrUndefined(incoming)) {
+      // It's important for these methods to return null if passed null
+      return incoming;
+    } else if (incoming instanceof Date) {
+      // In tests our mocks already have Date
+      return incoming;
+    } else {
+      return parseISO(incoming as string);
+    }
+  },
+};
+```
+
+Note that this will handle reading data from the cache; to handle submitting custom scalars (i.e. `Date`) as variables / input to mutations, your custom scalars should implement `toJSON()`, which Apollo will implicitly calls when putting them on the wire.
