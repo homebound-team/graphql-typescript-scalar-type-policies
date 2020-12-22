@@ -33,7 +33,7 @@ This plugin generates the following snippet in the output file:
 import { dateTypePolicy } from "src/dates";
 
 export const scalarTypePolicies = {
-  Author: { date: dateTypePolicy }
+  Author: { fields: { date: dateTypePolicy } },
 };
 ```
 

@@ -18,11 +18,11 @@ export const plugin: PluginFunction<Config> = async (schema, _, config) => {
         .filter(t => !t.name.startsWith("__"))
         .filter(t => Object.values(t.getFields()).some(isScalarWithTypePolicy))
         .map(type => {
-          return code`${type.name}: {${Object.values(type.getFields())
+          return code`${type.name}: { fields: { ${Object.values(type.getFields())
             .filter(isScalarWithTypePolicy)
             .map(
               field => code`${field.name}: ${toImp(scalarTypePolicies[(field.type as GraphQLScalarType).name])},`,
-            )}},`;
+            )}} },`;
         })}
     };
   `.toStringWithImports();
