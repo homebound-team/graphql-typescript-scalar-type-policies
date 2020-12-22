@@ -4,3 +4,7 @@ type Author {
   name: String!
   date: Date
 }
+
+type Book {
+  name: String!
+}

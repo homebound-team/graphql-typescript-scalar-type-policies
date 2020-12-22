@@ -1,9 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLNamedType,
-  GraphQLScalarType,
-  GraphQLType
-} from "graphql";
+import { GraphQLField, GraphQLObjectType, GraphQLNamedType, GraphQLScalarType, GraphQLType } from "graphql";
 import { code, imp } from "ts-poet";
 import { PluginFunction, Types } from "@graphql-codegen/plugin-helpers";
 import PluginOutput = Types.PluginOutput;
@@ -12,22 +7,21 @@ import PluginOutput = Types.PluginOutput;
 export const plugin: PluginFunction<Config> = async (schema, _, config) => {
   const { scalarTypePolicies = {} } = config || {};
 
+  function isScalarWithTypePolicy(f: GraphQLField<any, any>): boolean {
+    return isScalarType(f.type) && scalarTypePolicies[f.type.name] !== undefined;
+  }
+
   const content = await code`
     export const scalarTypePolicies = {
       ${Object.values(schema.getTypeMap())
         .filter(isObjectType)
         .filter(t => !t.name.startsWith("__"))
+        .filter(t => Object.values(t.getFields()).some(isScalarWithTypePolicy))
         .map(type => {
           return code`${type.name}: {${Object.values(type.getFields())
-            .filter(
-              field =>
-                isScalarType(field.type) && scalarTypePolicies[field.type.name]
-            )
+            .filter(isScalarWithTypePolicy)
             .map(
-              field =>
-                code`${field.name}: ${toImp(
-                  scalarTypePolicies[(field.type as GraphQLScalarType).name]
-                )},`
+              field => code`${field.name}: ${toImp(scalarTypePolicies[(field.type as GraphQLScalarType).name])},`,
             )}},`;
         })}
     };
