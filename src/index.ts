@@ -1,4 +1,11 @@
-import { GraphQLField, GraphQLObjectType, GraphQLNamedType, GraphQLScalarType, GraphQLType } from "graphql";
+import {
+  GraphQLField,
+  GraphQLObjectType,
+  GraphQLNamedType,
+  GraphQLScalarType,
+  GraphQLType,
+  isNonNullType,
+} from "graphql";
 import { code, imp } from "ts-poet";
 import { PluginFunction, Types } from "@graphql-codegen/plugin-helpers";
 import PluginOutput = Types.PluginOutput;
@@ -8,7 +15,11 @@ export const plugin: PluginFunction<Config> = async (schema, _, config) => {
   const { scalarTypePolicies = {} } = config || {};
 
   function isScalarWithTypePolicy(f: GraphQLField<any, any>): boolean {
-    return isScalarType(f.type) && scalarTypePolicies[f.type.name] !== undefined;
+    let type = f.type;
+    if (isNonNullType(type)) {
+      type = type.ofType;
+    }
+    return isScalarType(type) && scalarTypePolicies[type.name] !== undefined;
   }
 
   const content = await code`
@@ -20,9 +31,13 @@ export const plugin: PluginFunction<Config> = async (schema, _, config) => {
         .map(type => {
           return code`${type.name}: { fields: { ${Object.values(type.getFields())
             .filter(isScalarWithTypePolicy)
-            .map(
-              field => code`${field.name}: ${toImp(scalarTypePolicies[(field.type as GraphQLScalarType).name])},`,
-            )}} },`;
+            .map(field => {
+              let type = field.type;
+              if (isNonNullType(type)) {
+                type = type.ofType;
+              }
+              return code`${field.name}: ${toImp(scalarTypePolicies[(type as any).name])},`;
+            })} } },`;
         })}
     };
   `.toStringWithImports();

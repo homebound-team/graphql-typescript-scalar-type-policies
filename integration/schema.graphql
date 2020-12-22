@@ -2,9 +2,17 @@ scalar Date
 
 type Author {
   name: String!
-  date: Date
+  birthday: Date!
+  deathday: Date
 }
 
 type Book {
   name: String!
+}
+
+type CalendarInterval {
+  startDate: Date!
+  endDate: Date!
+  durationInDays: Int!
+  calendarProgress: Int!
 }
