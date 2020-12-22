@@ -1,0 +1,6 @@
+scalar Date
+
+type Author {
+  name: String!
+  date: Date
+}

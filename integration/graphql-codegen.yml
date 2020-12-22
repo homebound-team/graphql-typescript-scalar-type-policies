@@ -1,0 +1,12 @@
+overwrite: true
+schema: "./integration/schema.graphql"
+documents: null
+generates:
+  integration/graphql-types.ts:
+    config:
+      scalars:
+        Date: "src/dates#Date"
+      scalarTypePolicies:
+        Date: "src/dates#dateTypePolicy"
+    plugins:
+      - ./build/index.js
