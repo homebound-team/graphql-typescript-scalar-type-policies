@@ -1,10 +1,10 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.0.0
+  node: circleci/node@5.1.0
 
 node-image: &node-image
-  image: cimg/node:16.4.0
+  image: cimg/node:18.18.0
   auth:
     username: $DOCKERHUB_USERNAME
     password: $DOCKERHUB_ACCESS_TOKEN
@@ -33,7 +33,7 @@ jobs:
       - checkout
       - run: 'echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc'
       - node/install-packages
-      - run: npm run build
+      - run: yarn build
 
   publish:
     docker:
@@ -43,6 +43,6 @@ jobs:
       - checkout
       - run: 'echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc'
       - node/install-packages
-      - run: npm run build
+      - run: yarn build
       - run: ./bump.sh package.json
-      - run: npm publish
+      - run: yarn npm publish
