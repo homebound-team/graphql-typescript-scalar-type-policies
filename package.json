@@ -4,8 +4,8 @@
   "main": "./build/index.js",
   "types": "./build/",
   "scripts": {
-    "build": "rm -rf build; ./node_modules/.bin/tsc",
-    "prepare": "npm run build",
+    "build": "rm -rf build; tsc",
+    "prepack": "yarn build",
     "test": "./node_modules/.bin/jest --watch",
     "coverage": "./node_modules/.bin/jest --collectCoverage",
     "format": "prettier --write 'src/**/*.{ts,js,tsx,jsx}'",
@@ -27,7 +27,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run format"
+      "pre-commit": "yarn format"
     }
-  }
+  },
+  "packageManager": "yarn@3.6.3"
 }
