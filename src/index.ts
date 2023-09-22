@@ -40,7 +40,7 @@ export const plugin: PluginFunction<Config> = async (schema, _, config) => {
             })} } },`;
         })}
     };
-  `.toStringWithImports();
+  `.toString();
   return { content } as PluginOutput;
 };
 
