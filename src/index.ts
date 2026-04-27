@@ -2,8 +2,10 @@ import {
   GraphQLField,
   GraphQLObjectType,
   GraphQLNamedType,
+  GraphQLOutputType,
   GraphQLScalarType,
   GraphQLType,
+  isListType,
   isNonNullType,
 } from "graphql";
 import { code, imp } from "ts-poet";
@@ -11,15 +13,11 @@ import { PluginFunction, Types } from "@graphql-codegen/plugin-helpers";
 import PluginOutput = Types.PluginOutput;
 
 /** Generates field policies for user-defined types, i.e. Date handling. */
-export const plugin: PluginFunction<Config> = async (schema, _, config) => {
+export const plugin: PluginFunction<Config> = async function plugin(schema, _, config) {
   const { scalarTypePolicies = {} } = config || {};
 
-  function isScalarWithTypePolicy(f: GraphQLField<any, any>): boolean {
-    let type = f.type;
-    if (isNonNullType(type)) {
-      type = type.ofType;
-    }
-    return isScalarType(type) && scalarTypePolicies[type.name] !== undefined;
+  function hasScalarTypePolicy(field: GraphQLField<unknown, unknown>): boolean {
+    return getFieldPolicySpec(field.type, scalarTypePolicies) !== undefined;
   }
 
   const content = await code`
@@ -27,16 +25,16 @@ export const plugin: PluginFunction<Config> = async (schema, _, config) => {
       ${Object.values(schema.getTypeMap())
         .filter(isObjectType)
         .filter((t) => !t.name.startsWith("__"))
-        .filter((t) => Object.values(t.getFields()).some(isScalarWithTypePolicy))
+        .filter((t) => Object.values(t.getFields()).some(hasScalarTypePolicy))
         .map((type) => {
           return code`${type.name}: { fields: { ${Object.values(type.getFields())
-            .filter(isScalarWithTypePolicy)
+            .filter(hasScalarTypePolicy)
             .map((field) => {
-              let type = field.type;
-              if (isNonNullType(type)) {
-                type = type.ofType;
+              const fieldPolicySpec = getFieldPolicySpec(field.type, scalarTypePolicies);
+              if (!fieldPolicySpec) {
+                throw new Error(`Missing field policy spec for ${type.name}.${field.name}`);
               }
-              return code`${field.name}: ${toImp(scalarTypePolicies[(type as any).name])},`;
+              return code`${field.name}: ${toImp(fieldPolicySpec)},`;
             })} } },`;
         })}
     };
@@ -65,4 +63,40 @@ export function toImp(spec: string | undefined): unknown {
   }
   const [path, symbol] = spec.split("#");
   return imp(`${symbol}@${path}`);
+}
+
+/** Returns the type policy import spec for a field, i.e. `DateArray` for `[Date!]!`. */
+export function getFieldPolicySpec(
+  type: GraphQLOutputType,
+  scalarTypePolicies: Record<string, string>,
+): string | undefined {
+  const policyKey = getFieldPolicyConfigKey(type);
+  if (!policyKey) {
+    return undefined;
+  }
+  return scalarTypePolicies[policyKey];
+}
+
+/** Returns the policy config key for a field, i.e. `DateArray` for `[Date!]!`. */
+export function getFieldPolicyConfigKey(type: GraphQLOutputType): string | undefined {
+  let currentType: GraphQLType = type;
+  let isArray = false;
+
+  while (true) {
+    if (isNonNullType(currentType)) {
+      currentType = currentType.ofType;
+      continue;
+    }
+    if (isListType(currentType)) {
+      isArray = true;
+      currentType = currentType.ofType;
+      continue;
+    }
+    break;
+  }
+
+  if (!isScalarType(currentType)) {
+    return undefined;
+  }
+  return isArray ? `${currentType.name}Array` : currentType.name;
 }

@@ -4,6 +4,8 @@ type Author {
   name: String!
   birthday: Date!
   deathday: Date
+  importantDates: [Date!]
+  requiredImportantDates: [Date!]!
 }
 
 type Book {

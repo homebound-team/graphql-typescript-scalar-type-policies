@@ -8,5 +8,6 @@ generates:
         Date: "src/dates#Date"
       scalarTypePolicies:
         Date: "src/dates#dateTypePolicy"
+        DateArray: "src/dates#dateArrayTypePolicy"
     plugins:
       - ./build/index.js
