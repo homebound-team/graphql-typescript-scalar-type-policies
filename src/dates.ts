@@ -1,1 +1,2 @@
-const dateTypePolicy = {};
+export const dateTypePolicy = {};
+export const dateArrayTypePolicy = {};
